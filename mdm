@@ -1,0 +1,89 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require "maruku"
+require "yaml"
+require "liquid"
+
+export = :html
+opt = OptionParser.new do |opts|
+	opts.banner = "Usage: #{File.basename($0)} [options] <doc> [doc2] ..."
+	# opts.on("-o", "--output FILE", "Output filename (`-o -' writes to stdout)") {|s| output_file = s}
+	opts.on_tail("--html", "Output HTML") {export = :html}
+	opts.on_tail("--latex", "Output LaTeX" ) {export = :tex}
+	opts.on_tail("--pdf", "Output PDF;", "first writes LaTeX, then calls pdflatex") {export = :pdf}
+end
+
+begin
+  opt.parse!
+rescue OptionParser::InvalidOption => e
+  $stderr.puts e
+  $stderr.puts opt
+  exit
+end
+
+outdir = "out/"
+
+unless ARGV.empty?
+	ARGV.map do |f| 
+		puts "Reading from file #{f.inspect}."
+		[f, File.read(f)]
+	end
+else
+	exit 1
+end.each do |filename,doc|
+	out = ""
+	content = ""
+	suffix = ""
+	data = {}
+
+	# extract yaml header
+	if doc =~ /^(---\s*\n.*?\n?)^(---\s*$\n?)/m
+		doc = doc[($1.size + $2.size)..-1]
+
+		begin
+			data = YAML.load($1)
+		rescue => e
+			puts "YAML Exception: #{e.message}"
+		end
+	end
+
+	data ||= {}
+
+	# render liquid in the markdown
+	doc = Liquid::Template.parse(doc).render(data)
+	# puts doc
+
+	if (export == :html) 
+		content = Maruku.new(doc).to_html
+		suffix = '.html'
+	elsif (export == :tex) or (export == :pdf)
+		content = Maruku.new(doc).to_latex
+		suffix = '.tex'
+	end
+
+	data['content'] = content
+
+	mytempl = 'templates/' + data['type'] + suffix
+
+	# now render the template
+	renderer = Liquid::Template.parse(File.open(mytempl,"rb").read)
+	out = renderer.render(data)
+
+	# dir = File.dirname(filename)
+	job = File.join(outdir, File.basename(filename, File.extname(filename)))
+	output_file = job + suffix
+
+	puts "Writing to #{output_file.inspect}"
+	File.open(output_file, 'w') {|f| f.puts out}
+
+	if (export == :pdf) 
+		Dir.chdir(outdir) do 
+			cmd = ["pdflatex",File.basename(filename, File.extname(filename)) + ".tex","-interaction=nonstopmode"]
+		# cmd << "-output-directory=#{outdir}"
+			system *cmd
+			system *cmd
+			puts "mdm: executing $ #{cmd.join(' ')}"	
+		end
+	end
+end
