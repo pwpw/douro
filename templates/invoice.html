@@ -1,0 +1,18 @@
+<html>
+	<head><title>{{customer}} Invoice</title></head>
+	<body>
+		<h1>Invoice</h1>
+		<p>{{customer}}<br> {{address}} </p>
+		<table border=1>
+			<tr><th>sku</th><th>desc</th><th>price each</th><th>quantity</th><th>cost</th></tr>
+			{% assign total = 0 %}
+			{% for row in invoice %}
+				{% capture itemcost %} {{row.price| times: row.quantity}} {% endcapture %}
+				{% capture total %} {{total| plus: itemcost}}{% endcapture %}
+				<tr><td>{{row.sku}}</td><td>{{row.desc}}</td><td>{{row.price}}</td><td>{{row.quantity}}</td><td>{{itemcost}}</td></tr>
+			{% endfor %}
+			<tr><td>Total</td><td></td><td></td><td></td><td>{{total}}</td></tr>
+		</table>
+		{{content}} 
+	</body>
+</html>

@@ -1,0 +1,40 @@
+\documentclass[10pt,oneside,a4paper]{article}
+
+\usepackage{microtype}
+
+% Packages required to support encoding
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+
+% Packages required by code
+
+
+% Packages always used
+\usepackage{hyperref}
+\usepackage{xspace}
+\usepackage[usenames,dvipsnames]{color}
+\hypersetup{colorlinks=true,urlcolor=blue}
+
+\author{ {{author}} \\ {{address}} }
+\title{ {{title}} }
+
+\begin{document}
+
+\maketitle
+
+{{content}}
+
+\begin{tabular}{l l l l|l}
+	sku & desc & price each & quantity & cost \\
+	\hline
+	{% assign total = 0 %}
+	{% for row in invoice %}
+		{% capture itemcost %} {{row.price| times: row.quantity}} {% endcapture %}
+		{% capture total %} {{total| plus: itemcost}}{% endcapture %}
+			{{row.sku}} & {{row.desc}} & {{row.price}}  & {{row.quantity}} & {{itemcost}} \\
+	{% endfor %}
+	\hline
+	Total & & & & {{total}}
+\end{tabular}
+
+\end{document}

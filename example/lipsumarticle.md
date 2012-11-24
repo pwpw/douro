@@ -19,4 +19,4 @@ Lorem ipsum dolor sit amet.
 Another section
 ===============
 
-Some more text
+Some more text. *Lorem* ipsum **dolor** sit amet.
